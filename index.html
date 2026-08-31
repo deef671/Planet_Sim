@@ -1,0 +1,1933 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+    font-family: Arial;
+}
+
+.planet,.moon,.healer,.gravityPlanet,.shieldPlanet,.attacker,.jailer {
+    position: absolute;
+    border-radius: 50%;
+}
+
+.planet {
+    width: 50px;
+    height: 50px;
+    background: blue;
+}
+
+.moon {
+    width: 20px;
+    height: 20px;
+    background: gray;
+}
+
+.healer {
+    width: 50px;
+    height: 50px;
+    background: white;
+}
+
+.gravityPlanet {
+    width: 50px;
+    height: 50px;
+    background: red;
+}
+
+.shieldPlanet {
+    width: 50px;
+    height: 50px;
+    background: limegreen;
+}
+
+.attacker {
+    width: 50px;
+    height: 50px;
+    background: yellow;
+}
+
+.jailer {
+    width: 50px;
+    height: 50px;
+    background: white;
+}
+
+.gravityRadius {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(255,0,0,.6);
+    background: rgba(255,0,0,.12);
+    pointer-events: none;
+}
+
+.shield {
+    position: absolute;
+    width: 68px;
+    height: 68px;
+    border: 4px solid white;
+    border-left-color: transparent;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.crater {
+    position: absolute;
+    width: 10px;
+    height: 7px;
+    border-radius: 50%;
+    background: #222;
+    pointer-events: none;
+    animation: craterFade 5s forwards;
+}
+
+@keyframes craterFade {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.heart {
+    position: absolute;
+    color: white;
+    font-size: 20px;
+    animation: heal 1s forwards;
+    pointer-events: none;
+}
+
+@keyframes heal {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-30px) scale(1.4);
+    }
+}
+
+#settings {
+    position: fixed;
+    left: 10px;
+    top: 10px;
+    width: 230px;
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+    background: rgba(20,20,20,.94);
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+#settings h2 {
+    margin: 0 0 10px;
+    font-size: 18px;
+}
+
+.section {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #444;
+}
+
+.section b {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.control {
+    margin: 7px 0;
+}
+
+.control label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+input[type="range"] {
+    width: 100%;
+}
+
+input[type="color"] {
+    width: 45px;
+    height: 25px;
+    border: none;
+    padding: 0;
+}
+
+button {
+    width: 100%;
+    margin-top: 8px;
+    padding: 7px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#showSettings {
+    display: none;
+    position: fixed;
+    left: 10px;
+    top: 10px;
+    width: 42px;
+    height: 42px;
+    z-index: 1100;
+    font-size: 20px;
+    padding: 0;
+}
+
+.chartBox {
+    position: fixed;
+    right: 8px;
+    width: 170px;
+    height: 78px;
+    background: rgba(0,0,0,.85);
+    border: 1px solid white;
+    z-index: 20;
+    box-sizing: border-box;
+}
+
+.chartTitle {
+    color: white;
+    font-size: 10px;
+    padding: 2px 5px;
+}
+
+.chart {
+    width: 160px;
+    height: 55px;
+    display: block;
+}
+
+#collisionBox {
+    bottom: 165px;
+}
+
+#healingBox {
+    bottom: 85px;
+}
+
+#movementBox {
+    bottom: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="settings">
+
+<h2>⚙️ Simulation</h2>
+
+<button onclick="toggleSettings()">Hide settings</button>
+<button onclick="resetSimulation()">🔄 Reset Simulation</button>
+<button onclick="resetSettings()">⚙️ Reset Settings</button>
+
+<div class="section">
+<b>🪐 Planets</b>
+
+<div class="control">
+<label>
+Speed
+<span id="planetSpeedValue">0.4</span>
+</label>
+<input id="planetSpeed" type="range"
+min="0" max="3" step=".05" value=".4">
+</div>
+
+<div class="control">
+<label>
+Size
+<span id="planetSizeValue">50</span>
+</label>
+<input id="planetSize" type="range"
+min="10" max="100" value="50">
+</div>
+
+<div class="control">
+<label>
+Color
+<input id="planetColor" type="color" value="#0000ff">
+</label>
+</div>
+</div>
+
+<div class="section">
+<b>🌙 Moons</b>
+
+<div class="control">
+<label>
+Orbit speed
+<span id="moonSpeedValue">0.02</span>
+</label>
+<input id="moonSpeed" type="range"
+min="0" max=".2" step=".005" value=".02">
+</div>
+
+<div class="control">
+<label>
+Orbit distance
+<span id="moonDistanceValue">60</span>
+</label>
+<input id="moonDistance" type="range"
+min="30" max="150" value="60">
+</div>
+
+<div class="control">
+<label>
+Size
+<span id="moonSizeValue">20</span>
+</label>
+<input id="moonSize" type="range"
+min="5" max="50" value="20">
+</div>
+
+<div class="control">
+<label>
+Color
+<input id="moonColor" type="color" value="#888888">
+</label>
+</div>
+</div>
+
+<div class="section">
+<b>⚪ Healing</b>
+
+<div class="control">
+<label>
+Healing
+<span id="healAmountValue">10</span>
+</label>
+<input id="healAmount" type="range"
+min="1" max="100" value="10">
+</div>
+
+<div class="control">
+<label>
+Range
+<span id="healRangeValue">100</span>
+</label>
+<input id="healRange" type="range"
+min="20" max="300" value="100">
+</div>
+
+<div class="control">
+<label>
+Healer speed
+<span id="healerSpeedValue">0.4</span>
+</label>
+<input id="healerSpeed" type="range"
+min="0" max="3" step=".05" value=".4">
+</div>
+
+<div class="control">
+<label>
+Healing duration
+<span id="healDurationValue">10</span>
+</label>
+<input id="healDuration" type="range"
+min="1" max="30" value="10">
+</div>
+
+<div class="control">
+<label>
+Color
+<input id="healerColor" type="color" value="#ffffff">
+</label>
+</div>
+</div>
+
+<div class="section">
+<b>🔴 Gravity</b>
+
+<div class="control">
+<label>
+Range
+<span id="gravityRangeValue">110</span>
+</label>
+<input id="gravityRange" type="range"
+min="20" max="300" value="110">
+</div>
+
+<div class="control">
+<label>
+Strength
+<span id="gravityStrengthValue">0.045</span>
+</label>
+<input id="gravityStrength" type="range"
+min="0" max=".2" step=".005" value=".045">
+</div>
+
+<div class="control">
+<label>
+Swing
+<span id="gravitySwingValue">0.035</span>
+</label>
+<input id="gravitySwing" type="range"
+min="0" max=".2" step=".005" value=".035">
+</div>
+
+<div class="control">
+<label>
+Color
+<input id="gravityColor" type="color" value="#ff0000">
+</label>
+</div>
+</div>
+
+<div class="section">
+<b>🟢 Shield Planet</b>
+
+<div class="control">
+<label>
+Speed
+<span id="shieldSpeedValue">0.15</span>
+</label>
+<input id="shieldSpeed" type="range"
+min="0" max="2" step=".05" value=".15">
+</div>
+
+<div class="control">
+<label>
+Shield duration
+<span id="shieldDurationValue">10</span>
+</label>
+<input id="shieldDuration" type="range"
+min="1" max="30" value="10">
+</div>
+
+<div class="control">
+<label>
+Color
+<input id="shieldColor" type="color" value="#32cd32">
+</label>
+</div>
+</div>
+
+<div class="section">
+<b>💥 Collisions</b>
+
+<div class="control">
+<label>
+Damage
+<span id="damageValue">10</span>
+</label>
+<input id="damage" type="range"
+min="0" max="100" value="10">
+</div>
+
+<div class="control">
+<label>
+Knockback
+<span id="knockbackValue">2</span>
+</label>
+<input id="knockback" type="range"
+min="0" max="10" step=".1" value="2">
+</div>
+</div>
+
+<div class="section">
+<b>🟡 Attacker</b>
+
+<div class="control">
+<label>
+Speed
+<span id="attackerSpeedValue">1.2</span>
+</label>
+<input id="attackerSpeed" type="range"
+min=".1" max="4" step=".1" value="1.2">
+</div>
+
+<div class="control">
+<label>
+Damage
+<span id="attackerDamageValue">15</span>
+</label>
+<input id="attackerDamage" type="range"
+min="1" max="100" value="15">
+</div>
+</div>
+
+<div class="section">
+<b>⚪ Jail</b>
+
+<div class="control">
+<label>
+Jailer speed
+<span id="jailerSpeedValue">0.7</span>
+</label>
+<input id="jailerSpeed" type="range"
+min=".1" max="5" step=".1" value=".7">
+</div>
+
+<div class="control">
+<label>
+Jail time
+<span id="jailTimeValue">7</span>
+</label>
+<input id="jailTime" type="range"
+min="1" max="30" value="7">
+</div>
+</div>
+
+<div class="section">
+<b>📊 Graphs</b>
+
+<label>
+<input id="graphs" type="checkbox" checked>
+Show graphs
+</label>
+</div>
+
+</div>
+
+<button id="showSettings"
+onclick="toggleSettings()">⚙️</button>
+
+<div id="gravityRadius" class="gravityRadius"></div>
+<div id="gravityPlanet" class="gravityPlanet"></div>
+<div id="shieldPlanet" class="shieldPlanet"></div>
+<div id="healer" class="healer"></div>
+<div id="attacker" class="attacker"></div>
+<div id="jailer" class="jailer"></div>
+
+<div id="collisionBox" class="chartBox">
+<div class="chartTitle">💥 Collision Activity</div>
+<canvas id="collisionChart" class="chart"
+width="160" height="55"></canvas>
+</div>
+
+<div id="healingBox" class="chartBox">
+<div class="chartTitle">❤️ Healing Activity</div>
+<canvas id="healingChart" class="chart"
+width="160" height="55"></canvas>
+</div>
+
+<div id="movementBox" class="chartBox">
+<div class="chartTitle">🏃 Movement Activity</div>
+<canvas id="movementChart" class="chart"
+width="160" height="55"></canvas>
+</div>
+
+<script>
+
+let planetSpeed = .4;
+let planetSize = 50;
+
+let moonSpeed = .02;
+let moonDistance = 60;
+let moonSize = 20;
+
+let healAmount = 10;
+let healRange = 100;
+let healerSpeed = .4;
+let healDuration = 10;
+
+let gravityRange = 110;
+let gravityStrength = .045;
+let gravitySwing = .035;
+
+let shieldSpeed = .15;
+let shieldDuration = 10;
+
+let damageAmount = 10;
+let knockbackAmount = 2;
+
+let attackerSpeed = 1.2;
+let attackerDamage = 15;
+
+let jailerSpeed = .7;
+let jailTime = 7;
+
+let planets = [];
+let moons = [];
+let objects = [];
+
+let gravity = {
+    x: 400,
+    y: 300,
+    dx: .4,
+    dy: .2
+};
+
+let shield = {
+    x: 600,
+    y: 400,
+    dx: .15,
+    dy: .1
+};
+
+let heal = {
+    x: 700,
+    y: 200,
+    dx: .4,
+    dy: .2
+};
+
+let attackerData = {
+    x: 900,
+    y: 400,
+    target: null,
+    jailed: false,
+    jailTimer: null
+};
+
+let jailerData = {
+    x: 100,
+    y: 100
+};
+
+let gravityPlanet =
+document.getElementById("gravityPlanet");
+
+let shieldPlanet =
+document.getElementById("shieldPlanet");
+
+let healer =
+document.getElementById("healer");
+
+let attacker =
+document.getElementById("attacker");
+
+let jailer =
+document.getElementById("jailer");
+
+let gravityRadius =
+document.getElementById("gravityRadius");
+
+
+function distance(a,b) {
+
+    let aw = a.el ? a.el.offsetWidth : 50;
+    let ah = a.el ? a.el.offsetHeight : 50;
+
+    let bw = b.el ? b.el.offsetWidth : 50;
+    let bh = b.el ? b.el.offsetHeight : 50;
+
+    return Math.hypot(
+        a.x + aw / 2 - b.x - bw / 2,
+        a.y + ah / 2 - b.y - bh / 2
+    );
+}
+
+
+function createSimulation() {
+
+    planets = [];
+    moons = [];
+    objects = [];
+
+    for (let i = 0; i < 8; i++) {
+
+        let el =
+        document.createElement("div");
+
+        el.className = "planet";
+
+        document.body.appendChild(el);
+
+        planets.push({
+
+            el: el,
+
+            x:
+            280 +
+            Math.random() *
+            Math.max(
+                100,
+                innerWidth - 350
+            ),
+
+            y:
+            50 +
+            Math.random() *
+            Math.max(
+                50,
+                innerHeight - 100
+            ),
+
+            dx:
+            (Math.random() - .5) *
+            planetSpeed,
+
+            dy:
+            (Math.random() - .5) *
+            planetSpeed,
+
+            health: 100,
+
+            alive: true,
+
+            shield: false,
+
+            shieldElement: null,
+
+            shieldTimer: null,
+
+            angle: 0
+        });
+    }
+
+    for (let i = 0; i < 4; i++) {
+
+        let el =
+        document.createElement("div");
+
+        el.className = "moon";
+
+        document.body.appendChild(el);
+
+        moons.push({
+
+            el: el,
+
+            planet: planets[i],
+
+            angle:
+            Math.random() *
+            Math.PI * 2,
+
+            distance: moonDistance,
+
+            dx: 0,
+            dy: 0,
+
+            health: 100,
+
+            alive: true,
+
+            orbitKick: 0
+        });
+    }
+
+    objects =
+    [...planets,...moons];
+}
+
+
+function resetSimulation() {
+
+    for (let p of planets) {
+
+        if (p.shieldTimer)
+            clearTimeout(p.shieldTimer);
+
+        if (p.shieldElement)
+            p.shieldElement.remove();
+
+        if (p.el)
+            p.el.remove();
+    }
+
+    for (let m of moons) {
+
+        if (m.el)
+            m.el.remove();
+    }
+
+    if (attackerData.jailTimer)
+        clearTimeout(attackerData.jailTimer);
+
+    attackerData.x =
+    Math.max(100,innerWidth - 100);
+
+    attackerData.y =
+    Math.max(100,innerHeight / 2);
+
+    attackerData.target = null;
+    attackerData.jailed = false;
+
+    attacker.style.display = "block";
+
+    jailerData.x = 100;
+    jailerData.y =
+    Math.max(100,innerHeight / 2);
+
+    collisionMap.clear();
+
+    createSimulation();
+}
+
+
+function resetSettings() {
+
+    planetSpeed = .4;
+    planetSize = 50;
+
+    moonSpeed = .02;
+    moonDistance = 60;
+    moonSize = 20;
+
+    healAmount = 10;
+    healRange = 100;
+    healerSpeed = .4;
+    healDuration = 10;
+
+    gravityRange = 110;
+    gravityStrength = .045;
+    gravitySwing = .035;
+
+    shieldSpeed = .15;
+    shieldDuration = 10;
+
+    damageAmount = 10;
+    knockbackAmount = 2;
+
+    attackerSpeed = 1.2;
+    attackerDamage = 15;
+
+    jailerSpeed = .7;
+    jailTime = 7;
+
+    document.getElementById("planetSpeed").value = .4;
+    document.getElementById("planetSize").value = 50;
+
+    document.getElementById("moonSpeed").value = .02;
+    document.getElementById("moonDistance").value = 60;
+    document.getElementById("moonSize").value = 20;
+
+    document.getElementById("healAmount").value = 10;
+    document.getElementById("healRange").value = 100;
+    document.getElementById("healerSpeed").value = .4;
+    document.getElementById("healDuration").value = 10;
+
+    document.getElementById("gravityRange").value = 110;
+    document.getElementById("gravityStrength").value = .045;
+    document.getElementById("gravitySwing").value = .035;
+
+    document.getElementById("shieldSpeed").value = .15;
+    document.getElementById("shieldDuration").value = 10;
+
+    document.getElementById("damage").value = 10;
+    document.getElementById("knockback").value = 2;
+
+    document.getElementById("attackerSpeed").value = 1.2;
+    document.getElementById("attackerDamage").value = 15;
+
+    document.getElementById("jailerSpeed").value = .7;
+    document.getElementById("jailTime").value = 7;
+
+    updateLabels();
+    updateVisuals();
+}
+
+
+function toggleSettings() {
+
+    let panel =
+    document.getElementById("settings");
+
+    let button =
+    document.getElementById("showSettings");
+
+    if (panel.style.display === "none") {
+
+        panel.style.display = "block";
+        button.style.display = "none";
+
+    } else {
+
+        panel.style.display = "none";
+        button.style.display = "block";
+    }
+}
+
+
+function updateVisuals() {
+
+    for (let p of planets) {
+
+        if (!p.alive)
+            continue;
+
+        p.el.style.width =
+        planetSize + "px";
+
+        p.el.style.height =
+        planetSize + "px";
+
+        p.el.style.background =
+        planetColor.value;
+    }
+
+    for (let m of moons) {
+
+        if (!m.alive)
+            continue;
+
+        m.el.style.width =
+        moonSize + "px";
+
+        m.el.style.height =
+        moonSize + "px";
+
+        m.el.style.background =
+        moonColor.value;
+    }
+
+    healer.style.background =
+    healerColor.value;
+
+    gravityPlanet.style.background =
+    gravityColor.value;
+
+    shieldPlanet.style.background =
+    shieldColor.value;
+}
+
+
+function updateLabels() {
+
+    planetSpeedValue.textContent = planetSpeed;
+    planetSizeValue.textContent = planetSize;
+
+    moonSpeedValue.textContent = moonSpeed;
+    moonDistanceValue.textContent = moonDistance;
+    moonSizeValue.textContent = moonSize;
+
+    healAmountValue.textContent = healAmount;
+    healRangeValue.textContent = healRange;
+    healerSpeedValue.textContent = healerSpeed;
+    healDurationValue.textContent = healDuration;
+
+    gravityRangeValue.textContent = gravityRange;
+    gravityStrengthValue.textContent = gravityStrength;
+    gravitySwingValue.textContent = gravitySwing;
+
+    shieldSpeedValue.textContent = shieldSpeed;
+    shieldDurationValue.textContent = shieldDuration;
+
+    damageValue.textContent = damageAmount;
+    knockbackValue.textContent = knockbackAmount;
+
+    attackerSpeedValue.textContent = attackerSpeed;
+    attackerDamageValue.textContent = attackerDamage;
+
+    jailerSpeedValue.textContent = jailerSpeed;
+    jailTimeValue.textContent = jailTime;
+}
+
+
+function slider(id,callback) {
+
+    let input =
+    document.getElementById(id);
+
+    input.oninput =
+    function() {
+
+        callback(
+            Number(input.value)
+        );
+
+        updateLabels();
+        updateVisuals();
+    };
+}
+
+
+slider("planetSpeed",v => planetSpeed = v);
+slider("planetSize",v => planetSize = v);
+
+slider("moonSpeed",v => moonSpeed = v);
+slider("moonDistance",v => moonDistance = v);
+slider("moonSize",v => moonSize = v);
+
+slider("healAmount",v => healAmount = v);
+slider("healRange",v => healRange = v);
+slider("healerSpeed",v => healerSpeed = v);
+slider("healDuration",v => healDuration = v);
+
+slider("gravityRange",v => gravityRange = v);
+slider("gravityStrength",v => gravityStrength = v);
+slider("gravitySwing",v => gravitySwing = v);
+
+slider("shieldSpeed",v => shieldSpeed = v);
+slider("shieldDuration",v => shieldDuration = v);
+
+slider("damage",v => damageAmount = v);
+slider("knockback",v => knockbackAmount = v);
+
+slider("attackerSpeed",v => attackerSpeed = v);
+slider("attackerDamage",v => attackerDamage = v);
+
+slider("jailerSpeed",v => jailerSpeed = v);
+slider("jailTime",v => jailTime = v);
+
+
+planetColor.oninput = updateVisuals;
+moonColor.oninput = updateVisuals;
+healerColor.oninput = updateVisuals;
+gravityColor.oninput = updateVisuals;
+shieldColor.oninput = updateVisuals;
+
+
+graphs.onchange = function() {
+
+    let display =
+    graphs.checked ? "block" : "none";
+
+    collisionBox.style.display = display;
+    healingBox.style.display = display;
+    movementBox.style.display = display;
+};
+
+
+function giveShield(planet) {
+
+    if (
+        !planet ||
+        !planet.alive ||
+        planet.shield
+    )
+        return;
+
+    planet.shield = true;
+
+    let ring =
+    document.createElement("div");
+
+    ring.className = "shield";
+
+    document.body.appendChild(ring);
+
+    planet.shieldElement = ring;
+
+    planet.shieldTimer =
+    setTimeout(
+        function() {
+
+            planet.shield = false;
+
+            if (planet.shieldElement) {
+
+                planet.shieldElement.remove();
+
+                planet.shieldElement = null;
+            }
+
+        },
+        shieldDuration * 1000
+    );
+}
+
+
+function updateShield(planet) {
+
+    if (
+        !planet.shield ||
+        !planet.shieldElement
+    )
+        return;
+
+    planet.angle += shieldSpeed * 10;
+
+    planet.shieldElement.style.left =
+    planet.x - 9 + "px";
+
+    planet.shieldElement.style.top =
+    planet.y - 9 + "px";
+
+    planet.shieldElement.style.transform =
+    "rotate(" +
+    planet.angle +
+    "deg)";
+}
+
+
+function isProtected(object) {
+
+    if (object.shield)
+        return true;
+
+    if (
+        object.planet &&
+        object.planet.alive &&
+        object.planet.shield
+    )
+        return true;
+
+    return false;
+}
+
+
+function crater(object) {
+
+    if (!object.alive)
+        return;
+
+    let c =
+    document.createElement("div");
+
+    c.className = "crater";
+
+    c.style.left =
+    Math.random() *
+    Math.max(
+        1,
+        object.el.clientWidth - 10
+    ) + "px";
+
+    c.style.top =
+    Math.random() *
+    Math.max(
+        1,
+        object.el.clientHeight - 7
+    ) + "px";
+
+    object.el.appendChild(c);
+
+    setTimeout(
+        function() {
+            c.remove();
+        },
+        5000
+    );
+}
+
+
+function heart(object) {
+
+    let h =
+    document.createElement("div");
+
+    h.className = "heart";
+
+    h.textContent = "♥";
+
+    h.style.left =
+    object.x + "px";
+
+    h.style.top =
+    object.y + "px";
+
+    document.body.appendChild(h);
+
+    setTimeout(
+        () => h.remove(),
+        1000
+    );
+}
+
+
+let collisionMap = new Map();
+
+function collide(a,b) {
+
+    if (
+        !a.alive ||
+        !b.alive
+    )
+        return;
+
+    let key =
+    a.el + "-" + b.el;
+
+    if (collisionMap.has(key))
+        return;
+
+    collisionMap.set(key,true);
+
+    collisionActivity += 12;
+
+    if (!isProtected(a))
+        a.health -= damageAmount;
+
+    if (!isProtected(b))
+        b.health -= damageAmount;
+
+    let dx =
+    b.x - a.x;
+
+    let dy =
+    b.y - a.y;
+
+    let d =
+    Math.hypot(dx,dy) || 1;
+
+    dx /= d;
+    dy /= d;
+
+    a.dx -=
+    dx * knockbackAmount;
+
+    a.dy -=
+    dy * knockbackAmount;
+
+    b.dx +=
+    dx * knockbackAmount;
+
+    b.dy +=
+    dy * knockbackAmount;
+
+    if (!isProtected(a))
+        crater(a);
+
+    if (!isProtected(b))
+        crater(b);
+
+    if (a.health <= 0)
+        die(a);
+
+    if (b.health <= 0)
+        die(b);
+
+    setTimeout(
+        () => collisionMap.delete(key),
+        500
+    );
+}
+
+
+function findTarget() {
+
+    let target = null;
+    let best = Infinity;
+
+    for (let p of planets) {
+
+        if (!p.alive)
+            continue;
+
+        let d =
+        distance(
+            attackerData,
+            p
+        );
+
+        if (d < best) {
+
+            best = d;
+            target = p;
+        }
+    }
+
+    return target;
+}
+
+
+function attackerHit(target) {
+
+    if (
+        !target ||
+        !target.alive
+    )
+        return;
+
+    if (isProtected(target))
+        return;
+
+    target.health -= attackerDamage;
+
+    collisionActivity += 8;
+
+    crater(target);
+
+    let dx =
+    target.x -
+    attackerData.x;
+
+    let dy =
+    target.y -
+    attackerData.y;
+
+    let d =
+    Math.hypot(dx,dy) || 1;
+
+    target.dx +=
+    dx / d *
+    knockbackAmount;
+
+    target.dy +=
+    dy / d *
+    knockbackAmount;
+
+    if (target.health <= 0)
+        die(target);
+}
+
+
+function die(object) {
+
+    if (!object.alive)
+        return;
+
+    object.alive = false;
+
+    if (object.shieldTimer)
+        clearTimeout(object.shieldTimer);
+
+    if (object.shieldElement)
+        object.shieldElement.remove();
+
+    for (let moon of moons) {
+
+        if (moon.planet === object) {
+
+            moon.planet = null;
+
+            moon.dx =
+            object.dx +
+            (Math.random() - .5) *
+            planetSpeed;
+
+            moon.dy =
+            object.dy +
+            (Math.random() - .5) *
+            planetSpeed;
+        }
+    }
+
+    object.el.remove();
+}
+
+
+function jailAttacker() {
+
+    if (attackerData.jailed)
+        return;
+
+    attackerData.jailed = true;
+
+    attacker.style.display = "none";
+
+    attackerData.jailTimer =
+    setTimeout(
+        function() {
+
+            attackerData.jailed = false;
+
+            attackerData.x =
+            Math.random() *
+            Math.max(
+                100,
+                innerWidth - 50
+            );
+
+            attackerData.y =
+            Math.random() *
+            Math.max(
+                100,
+                innerHeight - 50
+            );
+
+            attackerData.target = null;
+
+            attacker.style.display = "block";
+
+        },
+        jailTime * 1000
+    );
+}
+
+
+let collisionActivity = 0;
+let healingActivity = 0;
+
+let collisionHistory = [];
+let healingHistory = [];
+let movementHistory = [];
+
+
+function drawGraph(canvas,history) {
+
+    let ctx =
+    canvas.getContext("2d");
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    if (history.length < 2)
+        return;
+
+    ctx.beginPath();
+
+    for (
+        let i = 0;
+        i < history.length;
+        i++
+    ) {
+
+        let x =
+        i /
+        (history.length - 1) *
+        canvas.width;
+
+        let y =
+        canvas.height -
+        Math.min(
+            100,
+            history[i]
+        ) /
+        100 *
+        canvas.height;
+
+        if (i === 0)
+            ctx.moveTo(x,y);
+        else
+            ctx.lineTo(x,y);
+    }
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
+
+
+function updateGraphs() {
+
+    collisionHistory.push(
+        collisionActivity
+    );
+
+    healingHistory.push(
+        healingActivity
+    );
+
+    let movement = 0;
+    let count = 0;
+
+    for (let p of planets) {
+
+        if (!p.alive)
+            continue;
+
+        movement +=
+        Math.hypot(
+            p.dx,
+            p.dy
+        );
+
+        count++;
+    }
+
+    for (let m of moons) {
+
+        if (!m.alive)
+            continue;
+
+        if (
+            m.planet &&
+            m.planet.alive
+        ) {
+
+            movement +=
+            Math.abs(moonSpeed) *
+            m.distance / 20;
+
+        } else {
+
+            movement +=
+            Math.hypot(
+                m.dx,
+                m.dy
+            );
+        }
+
+        count++;
+    }
+
+    let average =
+    count > 0
+    ? movement / count
+    : 0;
+
+    movementHistory.push(
+        average * 60
+    );
+
+    collisionHistory =
+    collisionHistory.slice(-40);
+
+    healingHistory =
+    healingHistory.slice(-40);
+
+    movementHistory =
+    movementHistory.slice(-40);
+
+    drawGraph(
+        collisionChart,
+        collisionHistory
+    );
+
+    drawGraph(
+        healingChart,
+        healingHistory
+    );
+
+    drawGraph(
+        movementChart,
+        movementHistory
+    );
+
+    collisionActivity = 0;
+    healingActivity = 0;
+}
+
+
+setInterval(
+    updateGraphs,
+    250
+);
+
+
+function loop() {
+
+    for (let p of planets) {
+
+        if (!p.alive)
+            continue;
+
+        p.x += p.dx;
+        p.y += p.dy;
+
+        let speed =
+        Math.hypot(
+            p.dx,
+            p.dy
+        ) || 1;
+
+        p.dx +=
+        (
+            p.dx / speed *
+            planetSpeed -
+            p.dx
+        ) * .003;
+
+        p.dy +=
+        (
+            p.dy / speed *
+            planetSpeed -
+            p.dy
+        ) * .003;
+
+        if (
+            p.x <= 0 ||
+            p.x + planetSize >= innerWidth
+        )
+            p.dx *= -1;
+
+        if (
+            p.y <= 0 ||
+            p.y + planetSize >= innerHeight
+        )
+            p.dy *= -1;
+
+        p.el.style.left =
+        p.x + "px";
+
+        p.el.style.top =
+        p.y + "px";
+
+        if (
+            distance(p,shield) < 50
+        )
+            giveShield(p);
+
+        updateShield(p);
+    }
+
+
+    for (let m of moons) {
+
+        if (!m.alive)
+            continue;
+
+        if (
+            m.planet &&
+            m.planet.alive
+        ) {
+
+            m.angle +=
+            moonSpeed +
+            m.orbitKick;
+
+            m.orbitKick *= .995;
+
+            m.distance =
+            moonDistance;
+
+            m.x =
+            m.planet.x +
+            planetSize / 2 +
+            Math.cos(m.angle) *
+            m.distance -
+            moonSize / 2;
+
+            m.y =
+            m.planet.y +
+            planetSize / 2 +
+            Math.sin(m.angle) *
+            m.distance -
+            moonSize / 2;
+
+        } else {
+
+            m.planet = null;
+
+            m.x += m.dx;
+            m.y += m.dy;
+
+            if (
+                m.x <= 0 ||
+                m.x + moonSize >= innerWidth
+            )
+                m.dx *= -1;
+
+            if (
+                m.y <= 0 ||
+                m.y + moonSize >= innerHeight
+            )
+                m.dy *= -1;
+        }
+
+        m.el.style.left =
+        m.x + "px";
+
+        m.el.style.top =
+        m.y + "px";
+    }
+
+
+    gravity.x += gravity.dx;
+    gravity.y += gravity.dy;
+
+    shield.x += shield.dx;
+    shield.y += shield.dy;
+
+    heal.x += heal.dx;
+    heal.y += heal.dy;
+
+
+    if (
+        gravity.x < 0 ||
+        gravity.x + 50 > innerWidth
+    )
+        gravity.dx *= -1;
+
+    if (
+        gravity.y < 0 ||
+        gravity.y + 50 > innerHeight
+    )
+        gravity.dy *= -1;
+
+    if (
+        shield.x < 0 ||
+        shield.x + 50 > innerWidth
+    )
+        shield.dx *= -1;
+
+    if (
+        shield.y < 0 ||
+        shield.y + 50 > innerHeight
+    )
+        shield.dy *= -1;
+
+    if (
+        heal.x < 0 ||
+        heal.x + 50 > innerWidth
+    )
+        heal.dx *= -1;
+
+    if (
+        heal.y < 0 ||
+        heal.y + 50 > innerHeight
+    )
+        heal.dy *= -1;
+
+
+    gravityPlanet.style.left =
+    gravity.x + "px";
+
+    gravityPlanet.style.top =
+    gravity.y + "px";
+
+    shieldPlanet.style.left =
+    shield.x + "px";
+
+    shieldPlanet.style.top =
+    shield.y + "px";
+
+    healer.style.left =
+    heal.x + "px";
+
+    healer.style.top =
+    heal.y + "px";
+
+
+    for (let o of objects) {
+
+        if (!o.alive)
+            continue;
+
+        let dx =
+        gravity.x - o.x;
+
+        let dy =
+        gravity.y - o.y;
+
+        let d =
+        Math.hypot(dx,dy);
+
+        if (
+            d < gravityRange &&
+            d > 5
+        ) {
+
+            let force =
+            gravityStrength *
+            (1 - d / gravityRange);
+
+            o.dx +=
+            dx / d *
+            force;
+
+            o.dy +=
+            dy / d *
+            force;
+
+            o.dx +=
+            -dy / d *
+            gravitySwing *
+            (1 - d / gravityRange);
+
+            o.dy +=
+            dx / d *
+            gravitySwing *
+            (1 - d / gravityRange);
+        }
+    }
+
+
+    let pulse =
+    Math.sin(
+        Date.now() * .003
+    ) * 5;
+
+    let r =
+    gravityRange + pulse;
+
+    gravityRadius.style.width =
+    r * 2 + "px";
+
+    gravityRadius.style.height =
+    r * 2 + "px";
+
+    gravityRadius.style.left =
+    gravity.x + 25 - r + "px";
+
+    gravityRadius.style.top =
+    gravity.y + 25 - r + "px";
+
+
+    for (let o of objects) {
+
+        if (
+            o.alive &&
+            distance(o,shield) < 35
+        )
+            giveShield(
+                o.planet || o
+            );
+    }
+
+
+    for (
+        let i = 0;
+        i < objects.length;
+        i++
+    ) {
+
+        for (
+            let j = i + 1;
+            j < objects.length;
+            j++
+        ) {
+
+            let a = objects[i];
+            let b = objects[j];
+
+            if (
+                !a.alive ||
+                !b.alive
+            )
+                continue;
+
+            if (
+                a.planet === b ||
+                b.planet === a
+            )
+                continue;
+
+            if (
+                distance(a,b) < 30
+            )
+                collide(a,b);
+        }
+    }
+
+
+    /* HEALING */
+
+    for (let o of objects) {
+
+        if (!o.alive)
+            continue;
+
+        let dx =
+        heal.x + 25 -
+        (o.x + o.el.offsetWidth / 2);
+
+        let dy =
+        heal.y + 25 -
+        (o.y + o.el.offsetHeight / 2);
+
+        let d =
+        Math.hypot(dx,dy);
+
+        if (
+            d <= healRange &&
+            o.health < 100
+        ) {
+
+            /*
+             Healing is spread across
+             the selected 10 second duration.
+            */
+
+            let amount =
+            healAmount /
+            (healDuration * 60);
+
+            o.health =
+            Math.min(
+                100,
+                o.health + amount
+            );
+
+            healingActivity += amount;
+
+            if (
+                Math.random() < .015
+            )
+                heart(o);
+        }
+    }
+
+
+    if (
+        !attackerData.jailed
+    ) {
+
+        if (
+            !attackerData.target ||
+            !attackerData.target.alive
+        )
+            attackerData.target =
+            findTarget();
+
+        if (
+            attackerData.target
+        ) {
+
+            let target =
+            attackerData.target;
+
+            let dx =
+            target.x -
+            attackerData.x;
+
+            let dy =
+            target.y -
+            attackerData.y;
+
+            let d =
+            Math.hypot(dx,dy) || 1;
+
+            attackerData.x +=
+            dx / d *
+            attackerSpeed;
+
+            attackerData.y +=
+            dy / d *
+            attackerSpeed;
+
+            if (d < 40)
+                attackerHit(target);
+        }
+
+        attacker.style.left =
+        attackerData.x + "px";
+
+        attacker.style.top =
+        attackerData.y + "px";
+    }
+
+
+    if (
+        !attackerData.jailed
+    ) {
+
+        let dx =
+        attackerData.x -
+        jailerData.x;
+
+        let dy =
+        attackerData.y -
+        jailerData.y;
+
+        let d =
+        Math.hypot(dx,dy) || 1;
+
+        jailerData.x +=
+        dx / d *
+        jailerSpeed;
+
+        jailerData.y +=
+        dy / d *
+        jailerSpeed;
+
+        if (d < 45)
+            jailAttacker();
+    }
+
+
+    jailer.style.left =
+    jailerData.x + "px";
+
+    jailer.style.top =
+    jailerData.y + "px";
+
+
+    updateVisuals();
+
+    requestAnimationFrame(loop);
+}
+
+
+updateLabels();
+updateVisuals();
+graphs.onchange();
+createSimulation();
+loop();
+
+</script>
+
+</body>
+</html>
