@@ -1,3 +1,3 @@
 # 🪐 Planet Simulation
 
-[🎮 Play the Simulation](YOUR-GITHUB-PAGES-LINK)
+[🎮 Play the Simulation](https://deef671.github.io/Planet_Sim/)
